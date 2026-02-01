@@ -13,10 +13,23 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-CHECKPOINT_PATH = "unet_colorizer_best.pt"
-BASE_CH = 32                                # must match training BASE_CH
-INPUT_IMAGE = "demo_image.png"                    # RGB grayscale image path
-OUTPUT_IMAGE = "demo_image_colorized.png"              # output RGB image path
+CHECKPOINT_PATHS = [
+        "unet_colorizer_best.pt",
+        "unet_colorizer.pt",
+        ]
+
+
+#CHECKPOINT_PATH = "unet_colorizer_best.pt"
+BASE_CH = 32                                   # must match training BASE_CH
+
+INPUT_IMAGES = [
+        "demo_image.png",
+        "person_demo.jpg",
+        ]
+OUTPUT_DIR = "qualitative_outputs"
+
+#INPUT_IMAGE = "demo_image.png"                    # RGB grayscale image path
+#OUTPUT_IMAGE = "demo_image_colorized.png"              # output RGB image path
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 USE_AMP = True                              # only used if DEVICE is cuda
@@ -99,7 +112,6 @@ def load_rgb_u8(path: str) -> np.ndarray:
         raise RuntimeError(f"Failed to read image: {path}")
     return cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
 
-
 def save_rgb_u8(path: str, rgb: np.ndarray) -> None:
     cv2 = _import_cv2()
     Path(path).parent.mkdir(parents=True, exist_ok=True)
@@ -127,6 +139,17 @@ def lab_to_rgb_u8(L01: np.ndarray, ab01: np.ndarray) -> np.ndarray:
     lab_u8 = np.stack([L_u8, a_u8, b_u8], axis=-1)
     return cv2.cvtColor(lab_u8, cv2.COLOR_LAB2RGB)
 
+def gray_rgb_from_L01(L01: np.ndarray) -> np.ndarray:
+    """
+    Render L01 as an RGB grayscale image (uint8) for side-by-side comparisons.
+    """
+    g = np.clip(L01 * 255.0, 0, 255).astype(np.uint8)
+    return np.stack([g, g, g], axis=-1)
+
+def hstack_rgb(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    if a.shape[0] != b.shape[0]:
+        raise ValueError("Images must have same height to hstack.")
+    return np.concatenate([a, b], axis=1)
 
 @torch.no_grad()
 def predict_ab(model: nn.Module, L01: np.ndarray) -> np.ndarray:
@@ -149,21 +172,38 @@ def predict_ab(model: nn.Module, L01: np.ndarray) -> np.ndarray:
 
 def main():
     print("Device:", DEVICE)
-    print("Loading checkpoint:", CHECKPOINT_PATH)
+    Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
 
-    model = UNetColorizer(base=BASE_CH).to(DEVICE)
-    state = torch.load(CHECKPOINT_PATH, map_location=DEVICE)
-    model.load_state_dict(state, strict=True)
-    model.eval()
+    for ckpt_path in CHECKPOINT_PATHS:
+        print("Loading checkpoint:", ckpt_path)
 
-    rgb_in = load_rgb_u8(INPUT_IMAGE)  # RGB uint8
-    L01 = rgb_to_L01(rgb_in)           # HxW float32 [0,1]
+        model = UNetColorizer(base=BASE_CH).to(DEVICE)
+        state = torch.load(ckpt_path, map_location=DEVICE)
+        model.load_state_dict(state, strict=True)
+        model.eval()
 
-    ab01 = predict_ab(model, L01)      # HxWx2 float32 [-1,1]
-    rgb_out = lab_to_rgb_u8(L01, ab01) # RGB uint8
+        ckpt_tag = Path(ckpt_path).stem  # e.g., "unet_colorizer_best"
 
-    save_rgb_u8(OUTPUT_IMAGE, rgb_out)
-    print("Saved colorized image ", OUTPUT_IMAGE)
+        for in_path in INPUT_IMAGES:
+            rgb_in = load_rgb_u8(in_path)          # RGB uint8
+            L01 = rgb_to_L01(rgb_in)               # HxW float32 [0,1]
+            ab01 = predict_ab(model, L01)          # HxWx2 float32 [-1,1]
+            rgb_out = lab_to_rgb_u8(L01, ab01)     # RGB uint8
+
+            # Save colorized output
+            out_name = f"{ckpt_tag}__{Path(in_path).stem}__colorized.png"
+            out_path = Path(OUTPUT_DIR) / out_name
+            save_rgb_u8(str(out_path), rgb_out)
+            print("Saved colorized:", out_path)
+
+            # Save side-by-side grayscale vs colorized
+            gray_rgb = gray_rgb_from_L01(L01)
+            compare = hstack_rgb(gray_rgb, rgb_out)
+            cmp_name = f"{ckpt_tag}__{Path(in_path).stem}__compare.png"
+            cmp_path = Path(OUTPUT_DIR) / cmp_name
+            save_rgb_u8(str(cmp_path), compare)
+            print("Saved compare:", cmp_path)
+
 
 
 if __name__ == "__main__":
