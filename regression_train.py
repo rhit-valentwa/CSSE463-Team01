@@ -1,22 +1,3 @@
-# unet_colorize_from_mmap_shards_split_eval.py
-#
-# Train/Val/Test split (80/10/10) + evaluation on val/test.
-# Dataset uses memory-mapped numpy shards.
-#
-# Plots:
-#   - Train/Val/Test "accuracy" curves over epochs
-#     (for regression, we treat accuracy as 1 - normalized error; see below)
-#
-# Reports at end (standard regression metrics on ab in [-1,1]):
-#   - MAE (L1)
-#   - MSE
-#   - RMSE
-#   - "Accuracy@tau" for multiple thresholds (fraction of pixels with |err| < tau)
-#   - Normalized accuracy = 1 - MAE/2 (since max abs error per channel is 2 over [-1,1])
-#
-# Run:
-#   python unet_colorize_from_mmap_shards_split_eval.py
-
 from pathlib import Path
 import os
 import random
@@ -27,10 +8,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader, Subset
 
-
-# -----------------------
-# CONFIG (edit here only)
-# -----------------------
 SHARD_DIR = Path("data/coco/train2017_cache_256_mmap")
 BATCH_SIZE = 32
 NUM_WORKERS = 8
@@ -50,12 +27,9 @@ TRAIN_RATIO = 0.80
 VAL_RATIO = 0.10
 TEST_RATIO = 0.10
 
-# evaluation thresholds for "Accuracy@tau" (ab error in [-1,1])
 ACCURACY_THRESHOLDS = (0.05, 0.10, 0.20)
 
-# plot output
 PLOT_PATH = "train_val_test_accuracy.png"
-# -----------------------
 
 torch.backends.cudnn.benchmark = True
 
@@ -66,10 +40,6 @@ def set_seed(seed: int):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
 
-
-# -----------------------
-# Dataset: loads mmap shards
-# -----------------------
 class CocoMMapCropDataset(Dataset):
     """
     Loads:
