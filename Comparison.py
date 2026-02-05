@@ -77,8 +77,9 @@ def evaluate_metrics(model: nn.Module, loader: DataLoader, device: str):
     for L, ab in loader:
         L = L.to(device)
         ab = ab.to(device)
-        L_rgb = L.repeat(1, 3, 1, 1)  # [B,1,H,W] -> [B,3,H,W]
-        pred = model(L_rgb)
+        # L_rgb = L.repeat(1, 3, 1, 1)  # [B,1,H,W] -> [B,3,H,W]
+        # pred = model(L_rgb)
+        pred = model(L)
         err = pred - ab
         abs_err = err.abs()
         sq_err = err * err
@@ -116,10 +117,10 @@ def quick_train(model, train_loader, val_loader, epochs=EPOCHS_QUICK, lr=1e-3, g
             ab = ab.to(DEVICE)
             opt.zero_grad(set_to_none=True)
             with torch.cuda.amp.autocast(enabled=amp_enabled):
-                L_rgb = L.repeat(1, 3, 1, 1)  # [B,1,H,W] -> [B,3,H,W]
-                pred = model(L_rgb)
+                # L_rgb = L.repeat(1, 3, 1, 1)  # [B,1,H,W] -> [B,3,H,W]
+                # pred = model(L_rgb)
 
-                # pred = model(L)
+                pred = model(L)
                 loss = loss_fn(pred, ab)
             scaler.scale(loss).backward()
             if grad_clip > 0.0:
@@ -219,7 +220,8 @@ def main_quick_test(ds):
 
     # Model quick training
 
-    model = ColorizationCNN(pretrained_backbone=True)
+    # model = ColorizationCNN(pretrained_backbone=True)
+    model = UNetColorizer(base=32)
     model, val_metrics = quick_train(model, train_loader_1k, test_loader_1k, epochs=EPOCHS_QUICK, lr=1e-3)
     print("Quick test finished.")
 
