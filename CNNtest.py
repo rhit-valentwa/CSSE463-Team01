@@ -14,7 +14,12 @@ class ColorizationCNN(nn.Module):
         vgg = models.vgg16_bn(pretrained=pretrained_backbone)
         features = list(vgg.features.children())
         # Use features up to layer that still has spatial resolution
-        self.enc1 = nn.Sequential(*features[:  6])   # out ~64
+        self.enc1 = nn.Sequential(
+            nn.Conv2d(1, 64, 3, 1, 1),  # Changed from 3 to 1
+            nn.ReLU(inplace=True),
+            nn.Conv2d(64, 64, 3, 1, 1),
+            nn.ReLU(inplace=True),
+        )
         self.enc2 = nn.Sequential(*features[6 : 13]) # out ~128
         self.enc3 = nn.Sequential(*features[13: 23]) # out ~256
         self.enc4 = nn.Sequential(*features[23: 33]) # out ~512

@@ -1,0 +1,29 @@
+{
+  "checkpoint": "unet_colorizer_best.pt",
+  "checkpoint_tag": "unet_colorizer_best",
+  "cache_dir": "data/ImageNet/test_cache_256_mmap",
+  "device": "cuda",
+  "batch_size": 32,
+  "num_samples_target": 5000,
+  "num_samples_ok": 5000,
+  "num_samples_failed": 0,
+  "weighted_by_pixels": true,
+  "lsos_params": {
+    "alpha": 0.05,
+    "eps": 1e-06
+  },
+  "baseline": {
+    "lsos": 30.139561364364624,
+    "deltaE76_mean": 17.52783169783978
+  },
+  "model": {
+    "lsos": 24.165278263282776,
+    "deltaE76_mean": 17.2426439666152
+  },
+  "improvement": {
+    "lsos_delta": 5.9742831010818485,
+    "deltaE76_mean_delta": 0.2851877312245783
+  },
+  "examples_saved": 12,
+  "examples_dir": "eval_outputs_cache/unet_colorizer_best/examples"
+}
