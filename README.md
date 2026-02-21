@@ -1,12 +1,12 @@
 # CSSE463-Team01
 
-Automatic image colorization — converting grayscale images to color using deep learning.
+Automatic image colorization.
 
-## Project Structure
+## Code Structure
 
 **Top-level training scripts:**
-- `unet_train.py` — trains a UNet-based colorization model
-- `vgg16_train.py` — trains a VGG16-based colorization model
+- `unet_train.py`:  trains a UNet-based colorization model
+- `vgg16_train.py`:  trains a VGG16-based colorization model
 
 **`analysis/`** — scripts for evaluating and analyzing model performance, including baseline and CNN evaluation, loss comparisons, hyperparameter grid search, qualitative example finding, dataset statistics, and additional analysis tools.
 
@@ -104,4 +104,4 @@ python demo.py
 
 ## Notes
 
-Generative AI was used to assist in writing and debugging various parts of this project. Models used include ChatGPT, Claude Sonnet, and others.
+Generative AI was used to assist in writing and debugging various parts of this project. Models used include ChatGPT 5.2, Claude Sonnet 4.5, and GitHub Copilot.
